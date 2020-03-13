@@ -1,0 +1,182 @@
+<html>
+
+<head>
+    <title>GarageHub</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="data:,">
+    <style>
+        html {
+            font-family: Helvetica;
+            display: inline-block;
+            justify-content: center;
+            justify-items: center;
+            background-color: #2C2F33;
+            margin: 0px auto;
+            text-align: center;
+        }
+
+        h1 {
+            color: white;
+            background-color: #23272A;
+            padding-top: 1.2vh;
+            padding-bottom: 1.2vh;
+            font-size: 1.5rem;
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+
+
+        h2 {
+            color: white;
+            padding-top: 1vh;
+            padding-bottom: 0.3vh;
+            padding-left: 2vw;
+            padding-right: 2vw;
+            font-size: 1.5rem;
+        }
+
+        p {
+            font-size: 1rem;
+            color: white;
+        }
+
+        div {
+            background-color: #23272A;
+            margin-top: 30vh;
+            padding-left: 9px;
+            padding-right: 9px;
+            padding-bottom: 1vh;
+            border: none;
+            border-radius: 30px;
+            display: inline-block;
+            justify-content: center;
+            justify-self: center;
+        }
+
+        .indicador {
+            color: #7286DA;
+            font-size: 1.2rem;
+        }
+
+        .on {
+            display: inline-block;
+            background-color: #7286DA;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            padding: 0.57vh 0.6vw;
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin: 2px;
+            cursor: pointer;
+        }
+
+        .off {
+            display: inline-block;
+            background-color: white;
+            border: none;
+            border-radius: 8px;
+            color: #2C2F22;
+            padding: 0.57vh 0.6vw;
+            text-decoration: none;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .popup {
+            margin-top: 5vh;
+            visibility: hidden;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>GarageHub</h1>
+    <div>
+        <h2>Distância Alvo:</h2>
+        <p>
+            <l id="distAlvo" class="indicador">0.0cm</l>
+            <button onclick="editPopupShow()" class="off">Editar</button>
+        </p>
+    </div>
+    <div>
+        <h2>Distância Atual:</h2>
+        <p>
+            <l id="distancia" class="indicador">0.0cm</l>
+        </p>
+    </div>
+    <div>
+        <h2>Estado do portão:</h2>
+        <p>
+            <l id="statPortao" id="portao" class="indicador">Fechado</l>
+        </p>
+    </div>
+    <p id="myPopup" class="popup">Novo Alvo: <input id="inputTarget" type="text"><br>
+        <button onclick="submit()" class="on">Ok</button>
+        <button onclick="editPopupHide()" class="off">Cancelar</button>
+    </p>
+    <script>
+        // Recebendo mensagens através de long polling
+        function SubscribePane(url) {
+            // Alterar pro meu padrão de como mostrar a mensagem
+            function showMessage(message) {
+                let distanciaElem = document.getElementById("distancia");
+                let portaoElem = document.getElementById("statPortao");
+                distanciaElem.innerHTML = message;
+                //elem.append(messageElem);
+            }
+            async function subscribe() {
+                let response = await fetch(url);
+
+                if (response.status == 502) {
+                    // Connection timeout
+                    // happens when the connection was pending for too long
+                    // let's reconnect
+                    await subscribe();
+                } else if (response.status != 200) {
+                    // Show Error
+                    showMessage(response.statusText);
+                    // Reconnect in one second
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await subscribe();
+                } else {
+                    // Got message
+                    let message = await response.text();
+                    showMessage(message);
+                    await subscribe();
+                }
+            }
+            subscribe();
+        }
+        function editPopupShow() {
+            let popup = document.getElementById("myPopup");
+            popup.style.visibility = "visible";
+        }
+        function editPopupHide() {
+            let popup = document.getElementById("myPopup");
+            popup.style.visibility = "hidden";
+        }
+        function submit() {
+            let input = document.getElementById("inputTarget");
+            let inputData = encodeURIComponent(input.value);
+            console.log(inputData);
+            var http = new XMLHttpRequest();
+			http.open("POST", "/newtarget", true);
+			http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			http.send(inputData);
+			http.onload = function () {
+				let messageElem = document.getElementById("distAlvo");
+				let message = http.responseText;
+				messageElem.innerHTML = message;
+			}
+            let popup = document.getElementById("myPopup");
+            popup.style.visibility = "hidden";
+        }
+        new SubscribePane('/?update');
+    </script>
+</body>
+
+</html>
