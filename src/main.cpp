@@ -1,7 +1,9 @@
 #include <Arduino.h>
+#include <WiFi.h>
 #include <stdint.h>
 
 // PINOUT
+uint8_t sensPin = 4;
 uint8_t redPin = 16;
 uint8_t greenPin = 17;
 uint8_t bluePin = 5;
@@ -15,9 +17,12 @@ const uint8_t redChannel = 0;
 const uint8_t blueChannel = 1;
 const uint8_t greenChannel = 2;
 
-
+// Program vars
+bool auxLight = false;
 uint32_t printTimer = 0;
-double distancia;
+double distancia, distAlvo;
+// Pagina web a ser adicionada
+char* html = "";
 
 void fadeFromTo(int from, int to){
 	for(int i = 0; i < 255; i++){
@@ -48,14 +53,8 @@ double calcDist(){
 }
 
 void setup(){
-	// Teste da fita (ascender branca)
-	/*pinMode(greenPin, OUTPUT);
-	pinMode(bluePin, OUTPUT);
-	pinMode(redPin, OUTPUT);
-	digitalWrite(greenPin, 1);
-	digitalWrite(bluePin, 1);
-	digitalWrite(redPin, 1);*/
-
+	// Inicializando sensor
+	pinMode(sensPin, INPUT);
 	// Inicializando os PWM
 	ledcAttachPin(redPin, redChannel);
 	ledcAttachPin(bluePin, blueChannel);
@@ -68,38 +67,29 @@ void setup(){
 	pinMode(echo, INPUT);
 	// Garantindo que o gatilho está baixo antes do incio
 	digitalWrite(trigger, LOW);
+	// Setando distancia alvo para o padrao (5cm)
+	distAlvo = 5.0;
 	// Abrindo comunicação serial com baudrate 115200
 	Serial.begin(115200);
 	Serial.println("Setup feito com sucesso!");
 }
 
 void loop(){
-		
-		// Codigo de exemplo alteração de cores analogica
-		/*fadeFromTo(blueChannel, greenChannel);
-		Serial.println("I'm faded");
-		fadeFromTo(greenChannel, redChannel);
-		Serial.println("Where are you now?");
-		fadeFromTo(redChannel, blueChannel);
-		Serial.println("Under de seaa");*/
-		
-		/* Codigo de exemplo calculo de distancia
-		if(millis() - printTimer > 500){
-			printTimer = millis();
-			double distancia = 0;
-			distancia = calcDist();
-			Serial.print(distancia);
-			Serial.println(" cm");
-		}*/
+	if(!sensPin){	
 		distancia = calcDist();
-		if (distancia > 50){
+		if (distancia > distAlvo*3){
 			setRGB(0, 255, 0);
-		} else if (distancia <= 50 && distancia > 20){
+		} else if (distancia <= distAlvo*3 && distancia > distAlvo+1){
 			setRGB(129, 126, 0);
 		} else {
 			setRGB(255, 0, 0);
 		}
 		Serial.print(distancia);
 		Serial.println(" cm");
+	} else if(auxLight){
+		setRGB(255, 255, 255);
+	} else {
+		setRGB(0, 0, 0);
+	}
 }
 
