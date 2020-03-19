@@ -1,27 +1,37 @@
 #include <Arduino.h>
 #include <stdint.h>
 
-uint8_t redPin = 11;
-uint8_t greenPin = 10;
-uint8_t bluePin = 9;
-uint8_t trigger = 2;
-uint8_t echo = 4;
+// PINOUT
+uint8_t redPin = 16;
+uint8_t greenPin = 17;
+uint8_t bluePin = 5;
+uint8_t trigger = 18;
+uint8_t echo = 19;
+
+// PWM var
+const int freq = 490;
+const uint8_t resolution = 8;
+const uint8_t redChannel = 0;
+const uint8_t blueChannel = 1;
+const uint8_t greenChannel = 2;
+
+
 uint32_t printTimer = 0;
 double distancia;
 
 void fadeFromTo(int from, int to){
 	for(int i = 0; i < 255; i++){
-		analogWrite(to, i);
+		ledcWrite(to, i);
 		delay(2);
-		analogWrite(from, 255 - i);
+		ledcWrite(from, 255 - i);
 		delay(2);
 	}
 }
 
 void setRGB(int r, int g, int b){
-	digitalWrite(redPin, r);
-	digitalWrite(greenPin, g);
-	digitalWrite(bluePin, b);
+	ledcWrite(redChannel, r);
+	ledcWrite(greenChannel, g);
+	ledcWrite(blueChannel, b);
 }
 
 double calcDist(){
@@ -38,10 +48,21 @@ double calcDist(){
 }
 
 void setup(){
-	// Setando os canais RGB como saída
-	pinMode(greenPin, OUTPUT);
+	// Teste da fita (ascender branca)
+	/*pinMode(greenPin, OUTPUT);
 	pinMode(bluePin, OUTPUT);
 	pinMode(redPin, OUTPUT);
+	digitalWrite(greenPin, 1);
+	digitalWrite(bluePin, 1);
+	digitalWrite(redPin, 1);*/
+
+	// Inicializando os PWM
+	ledcAttachPin(redPin, redChannel);
+	ledcAttachPin(bluePin, blueChannel);
+	ledcAttachPin(greenPin, greenChannel);
+	ledcSetup(redChannel, freq, resolution);
+	ledcSetup(blueChannel, freq, resolution);
+	ledcSetup(greenChannel, freq, resolution);
 	// Setando o gatilho e o eco do sensor como saída e entrada respectivamente
 	pinMode(trigger, OUTPUT);
 	pinMode(echo, INPUT);
@@ -49,15 +70,18 @@ void setup(){
 	digitalWrite(trigger, LOW);
 	// Abrindo comunicação serial com baudrate 115200
 	Serial.begin(115200);
-	Serial.println("Iniciando as medições!");
+	Serial.println("Setup feito com sucesso!");
 }
 
 void loop(){
 		
 		// Codigo de exemplo alteração de cores analogica
-		/*fadeFromTo(bluePin, greenPin);
-		fadeFromTo(greenPin, redPin);
-		fadeFromTo(redPin, bluePin);*/
+		/*fadeFromTo(blueChannel, greenChannel);
+		Serial.println("I'm faded");
+		fadeFromTo(greenChannel, redChannel);
+		Serial.println("Where are you now?");
+		fadeFromTo(redChannel, blueChannel);
+		Serial.println("Under de seaa");*/
 		
 		/* Codigo de exemplo calculo de distancia
 		if(millis() - printTimer > 500){
