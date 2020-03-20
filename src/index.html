@@ -1,8 +1,7 @@
 <html>
-
 <head>
     <title>GarageHub</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="data:,">
     <style>
         html {
@@ -114,37 +113,33 @@
             <l id="statPortao" id="portao" class="indicador">Fechado</l>
         </p>
     </div>
+    <p><button onclick="toggleAux()" class="off">Luz auxiliar</button></p>
     <p id="myPopup" class="popup">Novo Alvo: <input id="inputTarget" type="text"><br>
         <button onclick="submit()" class="on">Ok</button>
         <button onclick="editPopupHide()" class="off">Cancelar</button>
     </p>
     <script>
-        // Recebendo mensagens através de long polling
         function SubscribePane(url) {
-            // Alterar pro meu padrão de como mostrar a mensagem
             function showMessage(message) {
+                let alvoElem = document.getElementById("distAlvo");
                 let distanciaElem = document.getElementById("distancia");
                 let portaoElem = document.getElementById("statPortao");
-                distanciaElem.innerHTML = message;
-                //elem.append(messageElem);
+                distanciaElem.innerHTML = message["distancia"] + "cm";
+                portaoElem.innerHTML = message["portao"] == 0 ? "Aberto" : "Fechado";
+                alvoElem.innerHTML = message["alvo"] + "cm";
             }
             async function subscribe() {
                 let response = await fetch(url);
 
                 if (response.status == 502) {
-                    // Connection timeout
-                    // happens when the connection was pending for too long
-                    // let's reconnect
                     await subscribe();
                 } else if (response.status != 200) {
-                    // Show Error
                     showMessage(response.statusText);
-                    // Reconnect in one second
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     await subscribe();
                 } else {
-                    // Got message
-                    let message = await response.text();
+                    let dirtyMessage = await response.text();
+                    let message = JSON.parse(dirtyMessage);
                     showMessage(message);
                     await subscribe();
                 }
@@ -161,22 +156,26 @@
         }
         function submit() {
             let input = document.getElementById("inputTarget");
-            let inputData = encodeURIComponent(input.value);
+            let inputData = input.value;
             console.log(inputData);
             var http = new XMLHttpRequest();
 			http.open("POST", "/newtarget", true);
-			http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+			http.setRequestHeader("Content-type", "text/plain");
 			http.send(inputData);
 			http.onload = function () {
 				let messageElem = document.getElementById("distAlvo");
 				let message = http.responseText;
 				messageElem.innerHTML = message;
-			}
+			};
             let popup = document.getElementById("myPopup");
             popup.style.visibility = "hidden";
+        }
+        function toggleAux(){
+            var http = new XMLHttpRequest();
+            http.open("GET", "/toggleAux");
+            http.send();
         }
         new SubscribePane('/?update');
     </script>
 </body>
-
 </html>
